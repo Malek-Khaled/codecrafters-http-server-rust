@@ -24,15 +24,13 @@ fn main() {
             Ok(mut _stream) => {
                 thread::spawn(move || {
                     let root_dir = Cli::parse();
-                    let mut net_buff = [0; 100];
+                    let mut net_buff = [0; 1024];
                     #[allow(clippy::unused_io_amount)]
                     _stream.read(&mut net_buff).unwrap();
                     let splited_request: Vec<&[u8]> =
                         net_buff.split(|&byte| byte == b'\r').collect();
-                    let responce_body = splited_request.last().unwrap();
-                    for sef in &splited_request {
-                        dbg!(bytes_to_utf8(sef));
-                    }
+                    let request_body = splited_request.last().unwrap();
+                    println!("{}", bytes_to_utf8(request_body));
 
                     // Extracting headers into a hashMap
                     let mut header_hash: HashMap<String, String> = HashMap::new();
@@ -101,7 +99,7 @@ fn main() {
                                 request_line[1].split(|&byte| byte == b'/').collect();
                             let path = PathBuf::from(root_dir.directory);
                             let path = path.join(bytes_to_utf8(file_path[2]));
-                            if write(path, responce_body).is_ok() {
+                            if write(path, request_body).is_ok() {
                                 _stream.write_all(b"HTTP/1.1 201 Created\r\n\r\n").unwrap();
                             } else {
                                 _stream
