@@ -3,7 +3,7 @@ use std::net::TcpListener;
 use std::{
     collections::HashMap,
     io::{Read, Write},
-    iter::Map,
+    thread,
 };
 
 fn main() {
@@ -12,67 +12,70 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(mut _stream) => {
-                let mut net_buff = [0; 100];
-                #[allow(clippy::unused_io_amount)]
-                _stream.read(&mut net_buff).unwrap();
-                let splited_request: Vec<&[u8]> = net_buff.split(|&byte| byte == b'\r').collect();
+                thread::spawn(move || {
+                    let mut net_buff = [0; 100];
+                    #[allow(clippy::unused_io_amount)]
+                    _stream.read(&mut net_buff).unwrap();
+                    let splited_request: Vec<&[u8]> =
+                        net_buff.split(|&byte| byte == b'\r').collect();
 
-                // Extracting headers into a hashMap
-                let mut header_hash: HashMap<String, String> = HashMap::new();
-                let mut header_buffer = String::new();
-                for request in &splited_request {
-                    for ch in request.utf8_chunks() {
-                        for char in ch.valid().chars() {
-                            header_buffer.push(char);
+                    // Extracting headers into a hashMap
+                    let mut header_hash: HashMap<String, String> = HashMap::new();
+                    let mut header_buffer = String::new();
+                    for request in &splited_request {
+                        for ch in request.utf8_chunks() {
+                            for char in ch.valid().chars() {
+                                header_buffer.push(char);
+                            }
+                            header_buffer = header_buffer.replace("\n", "");
+                            let key_value: Vec<&str> = header_buffer.split(":").collect();
+                            if key_value.len() > 1 {
+                                header_hash.insert(
+                                    key_value[0].trim().to_string(),
+                                    key_value[1].trim().to_string(),
+                                );
+                            }
+                            header_buffer = String::new();
                         }
-                        header_buffer = header_buffer.replace("\n", "");
-                        let key_value: Vec<&str> = header_buffer.split(":").collect();
-                        if key_value.len() > 1 {
-                            header_hash.insert(
-                                key_value[0].trim().to_string(),
-                                key_value[1].trim().to_string(),
-                            );
-                        }
-                        header_buffer = String::new();
                     }
-                }
 
-                let request_line: Vec<&[u8]> = splited_request
-                    .first()
-                    .unwrap()
-                    .split(|&byte| byte == b' ')
-                    .collect();
-                match request_line[0] {
-                    b"GET" => {
-                        let url_path: Vec<&[u8]> =
-                            request_line[1].split(|&byte| byte == b'/').collect();
-                        match url_path[1] {
-                            b"echo" => {
-                                let utf8_string = bytes_to_utf8(url_path[2]);
-                                let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", utf8_string.len(), utf8_string);
-                                _stream.write_all(http_responce.as_bytes()).unwrap();
-                            }
-                            b"user-agent" => {
-                                let user_agent = header_hash.get("User-Agent").unwrap();
-                                let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", user_agent.len(), user_agent);
-                                _stream.write_all(http_responce.as_bytes()).unwrap();
-                            }
-                            b"" => {
-                                _stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n").unwrap();
-                            }
-                            _ => {
-                                _stream
-                                    .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
-                                    .unwrap();
+                    let request_line: Vec<&[u8]> = splited_request
+                        .first()
+                        .unwrap()
+                        .split(|&byte| byte == b' ')
+                        .collect();
+                    match request_line[0] {
+                        b"GET" => {
+                            let url_path: Vec<&[u8]> =
+                                request_line[1].split(|&byte| byte == b'/').collect();
+                            match url_path[1] {
+                                b"echo" => {
+                                    let utf8_string = bytes_to_utf8(url_path[2]);
+                                    let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", utf8_string.len(), utf8_string);
+                                    _stream.write_all(http_responce.as_bytes()).unwrap();
+                                }
+                                b"user-agent" => {
+                                    let user_agent = header_hash.get("User-Agent").unwrap();
+                                    let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", user_agent.len(), user_agent);
+                                    _stream.write_all(http_responce.as_bytes()).unwrap();
+                                }
+                                b"" => {
+                                    _stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n").unwrap();
+                                }
+                                _ => {
+                                    _stream
+                                        .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
+                                        .unwrap();
+                                }
                             }
                         }
+                        _ => {
+                            _stream
+                                .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
+                                .unwrap();
+                        }
                     }
-                    _ => {
-                        _stream
-                            .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
-                            .unwrap();
-                    }
-                }
+                });
             }
             Err(e) => {
                 println!("error: {}", e);
