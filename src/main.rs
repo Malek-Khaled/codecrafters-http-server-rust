@@ -3,6 +3,7 @@ use clap::Parser;
 use std::net::TcpListener;
 use std::{
     collections::HashMap,
+    env::SplitPaths,
     fs::{read, write},
     io::{Read, Write},
     path::PathBuf,
@@ -29,6 +30,9 @@ fn main() {
                     let splited_request: Vec<&[u8]> =
                         net_buff.split(|&byte| byte == b'\r').collect();
                     let responce_body = splited_request.last().unwrap();
+                    for sef in &splited_request {
+                        dbg!(bytes_to_utf8(sef));
+                    }
 
                     // Extracting headers into a hashMap
                     let mut header_hash: HashMap<String, String> = HashMap::new();
