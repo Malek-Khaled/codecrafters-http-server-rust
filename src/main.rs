@@ -1,6 +1,10 @@
-use std::io::{Read, Write};
 #[allow(unused_imports)]
 use std::net::TcpListener;
+use std::{
+    collections::HashMap,
+    io::{Read, Write},
+    iter::Map,
+};
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
@@ -9,8 +13,30 @@ fn main() {
         match stream {
             Ok(mut _stream) => {
                 let mut net_buff = [0; 100];
-                _stream.read(&mut net_buff);
+                #[allow(clippy::unused_io_amount)]
+                _stream.read(&mut net_buff).unwrap();
                 let splited_request: Vec<&[u8]> = net_buff.split(|&byte| byte == b'\r').collect();
+
+                // Extracting headers into a hashMap
+                let mut header_hash: HashMap<String, String> = HashMap::new();
+                let mut header_buffer = String::new();
+                for request in &splited_request {
+                    for ch in request.utf8_chunks() {
+                        for char in ch.valid().chars() {
+                            header_buffer.push(char);
+                        }
+                        header_buffer = header_buffer.replace("\n", "");
+                        let key_value: Vec<&str> = header_buffer.split(":").collect();
+                        if key_value.len() > 1 {
+                            header_hash.insert(
+                                key_value[0].trim().to_string(),
+                                key_value[1].trim().to_string(),
+                            );
+                        }
+                        header_buffer = String::new();
+                    }
+                }
+
                 let request_line: Vec<&[u8]> = splited_request
                     .first()
                     .unwrap()
@@ -22,14 +48,13 @@ fn main() {
                             request_line[1].split(|&byte| byte == b'/').collect();
                         match url_path[1] {
                             b"echo" => {
-                                let mut utf8_string = String::new();
-                                let content_utf8 = url_path[2].utf8_chunks();
-                                for ch in content_utf8 {
-                                    for char in ch.valid().chars() {
-                                        utf8_string.push(char);
-                                    }
-                                }
+                                let utf8_string = bytes_to_utf8(url_path[2]);
                                 let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", utf8_string.len(), utf8_string);
+                                _stream.write_all(http_responce.as_bytes()).unwrap();
+                            }
+                            b"user-agent" => {
+                                let user_agent = header_hash.get("User-Agent").unwrap();
+                                let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", user_agent.len(), user_agent);
                                 _stream.write_all(http_responce.as_bytes()).unwrap();
                             }
                             b"" => {
@@ -54,4 +79,15 @@ fn main() {
             }
         }
     }
+}
+
+fn bytes_to_utf8(bytes: &[u8]) -> String {
+    let mut utf8_string = String::new();
+    let content_utf8 = bytes.utf8_chunks();
+    for ch in content_utf8 {
+        for char in ch.valid().chars() {
+            utf8_string.push(char);
+        }
+    }
+    utf8_string
 }
