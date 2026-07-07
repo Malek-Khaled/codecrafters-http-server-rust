@@ -10,7 +10,7 @@ use std::{
 };
 #[derive(Parser, Debug)]
 struct Cli {
-    #[arg(short, long)]
+    #[arg(short, long, default_value_t = String::new())]
     /// root directory
     directory: String,
 }
