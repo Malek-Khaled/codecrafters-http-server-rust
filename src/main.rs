@@ -30,7 +30,6 @@ fn main() {
                     let splited_request: Vec<&[u8]> =
                         net_buff.split(|&byte| byte == b'\r').collect();
                     let request_body = splited_request.last().unwrap();
-                    println!("{}", bytes_to_utf8(request_body));
 
                     // Extracting headers into a hashMap
                     let mut header_hash: HashMap<String, String> = HashMap::new();
@@ -130,5 +129,5 @@ fn bytes_to_utf8(bytes: &[u8]) -> String {
             utf8_string.push(char);
         }
     }
-    utf8_string
+    utf8_string.trim().replace("\0", "")
 }
