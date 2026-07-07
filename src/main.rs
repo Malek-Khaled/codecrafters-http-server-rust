@@ -3,7 +3,7 @@ use clap::Parser;
 use std::net::TcpListener;
 use std::{
     collections::HashMap,
-    fs::read,
+    fs::{read, write},
     io::{Read, Write},
     path::PathBuf,
     thread,
@@ -28,6 +28,7 @@ fn main() {
                     _stream.read(&mut net_buff).unwrap();
                     let splited_request: Vec<&[u8]> =
                         net_buff.split(|&byte| byte == b'\r').collect();
+                    let responce_body = splited_request[7];
 
                     // Extracting headers into a hashMap
                     let mut header_hash: HashMap<String, String> = HashMap::new();
@@ -89,6 +90,19 @@ fn main() {
                                         .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
                                         .unwrap();
                                 }
+                            }
+                        }
+                        b"POST" => {
+                            let file_path: Vec<&[u8]> =
+                                request_line[1].split(|&byte| byte == b'/').collect();
+                            let path = PathBuf::from(root_dir.directory);
+                            let path = path.join(bytes_to_utf8(file_path[2]));
+                            if write(path, responce_body).is_ok() {
+                                _stream.write_all(b"HTTP/1.1 201 Created\r\n\r\n").unwrap();
+                            } else {
+                                _stream
+                                    .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
+                                    .unwrap();
                             }
                         }
                         _ => {
