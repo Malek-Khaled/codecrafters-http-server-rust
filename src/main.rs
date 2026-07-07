@@ -3,7 +3,6 @@ use clap::Parser;
 use std::net::TcpListener;
 use std::{
     collections::HashMap,
-    env::SplitPaths,
     fs::{read, write},
     io::{Read, Write},
     path::PathBuf,
@@ -98,7 +97,7 @@ fn main() {
                                 request_line[1].split(|&byte| byte == b'/').collect();
                             let path = PathBuf::from(root_dir.directory);
                             let path = path.join(bytes_to_utf8(file_path[2]));
-                            if write(path, request_body).is_ok() {
+                            if write(path, bytes_to_utf8(request_body)).is_ok() {
                                 _stream.write_all(b"HTTP/1.1 201 Created\r\n\r\n").unwrap();
                             } else {
                                 _stream
