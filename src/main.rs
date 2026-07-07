@@ -1,12 +1,22 @@
+use clap::Parser;
 #[allow(unused_imports)]
 use std::net::TcpListener;
 use std::{
     collections::HashMap,
+    fs::read,
     io::{Read, Write},
+    path::PathBuf,
     thread,
 };
+#[derive(Parser, Debug)]
+struct Cli {
+    #[arg(short, long)]
+    /// root directory
+    directory: String,
+}
 
 fn main() {
+    let root_dir = Cli::parse();
     let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
 
     for stream in listener.incoming() {
@@ -58,6 +68,17 @@ fn main() {
                                     let user_agent = header_hash.get("User-Agent").unwrap();
                                     let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", user_agent.len(), user_agent);
                                     _stream.write_all(http_responce.as_bytes()).unwrap();
+                                }
+                                b"files" => {
+                                    let path = PathBuf::from(root_dir + url_path[2]);
+                                    if let Ok(file) = read(path) {
+                                        let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\n\r\n{}", file.len(), bytes_to_utf8(&file));
+                                        _stream.write_all(http_responce.as_bytes()).unwrap();
+                                    } else {
+                                        _stream
+                                            .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
+                                            .unwrap();
+                                    }
                                 }
                                 b"" => {
                                     _stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n").unwrap();
