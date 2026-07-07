@@ -32,7 +32,7 @@ fn main() {
                                 let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", utf8_string.len(), utf8_string);
                                 _stream.write_all(http_responce.as_bytes()).unwrap();
                             }
-                            b" " => {
+                            b"" => {
                                 _stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n").unwrap();
                             }
                             _ => {
