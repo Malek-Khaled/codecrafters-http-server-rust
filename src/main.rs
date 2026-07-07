@@ -28,7 +28,7 @@ fn main() {
                     _stream.read(&mut net_buff).unwrap();
                     let splited_request: Vec<&[u8]> =
                         net_buff.split(|&byte| byte == b'\r').collect();
-                    let responce_body = splited_request[7];
+                    let responce_body = splited_request.last();
 
                     // Extracting headers into a hashMap
                     let mut header_hash: HashMap<String, String> = HashMap::new();
