@@ -16,13 +16,13 @@ struct Cli {
 }
 
 fn main() {
-    let root_dir = Cli::parse();
     let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
 
     for stream in listener.incoming() {
         match stream {
             Ok(mut _stream) => {
                 thread::spawn(move || {
+                    let root_dir = Cli::parse();
                     let mut net_buff = [0; 100];
                     #[allow(clippy::unused_io_amount)]
                     _stream.read(&mut net_buff).unwrap();
@@ -70,7 +70,8 @@ fn main() {
                                     _stream.write_all(http_responce.as_bytes()).unwrap();
                                 }
                                 b"files" => {
-                                    let path = PathBuf::from(root_dir + url_path[2]);
+                                    let path = PathBuf::from(root_dir.directory);
+                                    let path = path.join(bytes_to_utf8(url_path[2]));
                                     if let Ok(file) = read(path) {
                                         let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\n\r\n{}", file.len(), bytes_to_utf8(&file));
                                         _stream.write_all(http_responce.as_bytes()).unwrap();
