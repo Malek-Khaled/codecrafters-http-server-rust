@@ -59,14 +59,16 @@ fn main() {
                         b"GET" => {
                             let mut _status = String::from("HTTP/1.1 200 OK\r\n");
                             let mut _content_type = String::from("Content-Type: text/plain\r\n");
-                            let mut _content_encoding = if headers_hash
-                                .contains_key("Accept-Encoding")
-                                && headers_hash.get("Content-Encoding").unwrap().eq("gzip")
-                            {
-                                String::from("Content-Encoding: gzip")
-                            } else {
-                                String::new()
-                            };
+                            let mut _content_encoding =
+                                if headers_hash.contains_key("Accept-Encoding") {
+                                    if headers_hash.get("Content-Encoding").unwrap().eq("gzip") {
+                                        String::from("Content-Encoding: gzip")
+                                    } else {
+                                        String::new()
+                                    }
+                                } else {
+                                    String::new()
+                                };
                             let mut _content_length: usize = 0;
                             let mut _content_body = String::new();
                             let url_path: Vec<&[u8]> =
