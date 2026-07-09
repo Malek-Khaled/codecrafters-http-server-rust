@@ -60,12 +60,10 @@ fn main() {
                             let mut _status = String::from("HTTP/1.1 200 OK\r\n");
                             let mut _content_type = String::from("Content-Type: text/plain\r\n");
                             let mut _content_encoding =
-                                if headers_hash.contains_key("Accept-Encoding") {
-                                    if headers_hash.get("Content-Encoding").unwrap().eq("gzip") {
-                                        String::from("Content-Encoding: gzip")
-                                    } else {
-                                        String::new()
-                                    }
+                                if headers_hash.get("Accept-Encoding").is_some()
+                                    && headers_hash.get("Content-Encoding").unwrap().eq("gzip")
+                                {
+                                    String::from("Content-Encoding: gzip")
                                 } else {
                                     String::new()
                                 };
