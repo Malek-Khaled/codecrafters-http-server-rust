@@ -104,10 +104,10 @@ fn main() {
                                         // let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\n\r\n{}", file.len(), bytes_to_utf8(&file));
                                         // _stream.write_all(http_responce.as_bytes()).unwrap();
                                     } else {
-                                        _status = String::from("HTTP/1.1 404 Not Found");
-                                        // _stream
-                                        //     .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
-                                        //     .unwrap();
+                                        // _status = String::from("HTTP/1.1 404 Not Found");
+                                        _stream
+                                            .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
+                                            .unwrap();
                                     }
                                 }
                                 b"" => {
