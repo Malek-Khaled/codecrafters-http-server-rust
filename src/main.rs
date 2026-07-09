@@ -98,8 +98,9 @@ fn main() {
                                     if let Ok(file) = read(path) {
                                         _content_length = file.len();
                                         _content_body = bytes_to_utf8(&file);
-                                        _content_type =
-                                            String::from("application/octet-stream\r\n");
+                                        _content_type = String::from(
+                                            "Content-Type: application/octet-stream\r\n",
+                                        );
                                         // let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\n\r\n{}", file.len(), bytes_to_utf8(&file));
                                         // _stream.write_all(http_responce.as_bytes()).unwrap();
                                     } else {
