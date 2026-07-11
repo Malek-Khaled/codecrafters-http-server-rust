@@ -61,7 +61,7 @@ fn main() {
                             let mut _content_type = String::new();
                             let _content_encoding = String::new();
                             if let Some(encoder) = headers_hash.get("Accept-Encoding") {
-                                if encoder.eq("gzip") {
+                                if encoder.trim().eq("gzip") {
                                     _content_type = String::from("Content-Encoding: gzip\r\n");
                                 }
                             }
