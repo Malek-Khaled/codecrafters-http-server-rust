@@ -1,4 +1,5 @@
 use clap::Parser;
+use flate2::{write::GzEncoder, Compression};
 #[allow(unused_imports)]
 use std::net::TcpListener;
 use std::{
@@ -117,7 +118,15 @@ fn main() {
                                 &_status,
                                 &_content_body,
                             );
-                            _stream.write_all(&http_responce).unwrap();
+                            if !&_content_encoding.is_empty() {
+                                let buff: Vec<u8> = Vec::new();
+                                let mut compressor =
+                                    GzEncoder::new(Vec::new(), Compression::default());
+                                compressor.write_all(&buff).unwrap();
+                                _stream.write_all(&buff).unwrap();
+                            } else {
+                                _stream.write_all(&http_responce).unwrap();
+                            }
                         }
                         b"POST" => {
                             let file_path: Vec<&[u8]> =
