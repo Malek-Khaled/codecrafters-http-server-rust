@@ -58,71 +58,61 @@ fn main() {
                     match request_line[0] {
                         b"GET" => {
                             let mut _status = String::from("HTTP/1.1 200 OK\r\n");
-                            let mut _content_type = String::from("Content-Type: text/plain\r\n");
+                            let mut _content_type = String::new();
                             let _content_encoding = String::new();
                             if let Some(encoder) = headers_hash.get("Accept-Encoding") {
                                 if encoder.eq("gzip") {
                                     _content_type = String::from("Content-Encoding: gzip\r\n");
                                 }
                             }
-                            // let mut _content_encoding = if headers_hash
-                            //     .contains_key("Accept-Encoding")
-                            //     && headers_hash.get("Content-Encoding").unwrap().eq("gzip")
-                            // {
-                            //     String::from("Content-Encoding: gzip")
-                            // } else {
-                            //     String::new()
-                            // };
-                            let mut _content_length: usize = 0;
+                            let mut _content_length = String::new();
                             let mut _content_body = String::new();
                             let url_path: Vec<&[u8]> =
                                 request_line[1].split(|&byte| byte == b'/').collect();
                             match url_path[1] {
                                 b"echo" => {
                                     let utf8_string = bytes_to_utf8(url_path[2]);
-                                    _content_length = utf8_string.len();
+                                    _content_length =
+                                        format!("Content-Length: {}", utf8_string.len());
                                     _content_body = utf8_string;
-                                    // let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", utf8_string.len(), utf8_string);
-                                    // _stream.write_all(http_responce.as_bytes()).unwrap();
+                                    _content_type = String::from("Content-Type: text/plain\r\n");
                                 }
                                 b"user-agent" => {
                                     let user_agent = headers_hash.get("User-Agent").unwrap();
-                                    _content_length = user_agent.len();
+                                    _content_length =
+                                        format!("Content-Length: {}", user_agent.len());
                                     _content_body = user_agent.clone();
-                                    // let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}", user_agent.len(), user_agent);
-                                    // _stream.write_all(http_responce.as_bytes()).unwrap();
+                                    _content_type = String::from("Content-Type: text/plain\r\n");
                                 }
                                 b"files" => {
                                     let path = PathBuf::from(root_dir.directory);
                                     let path = path.join(bytes_to_utf8(url_path[2]));
                                     if let Ok(file) = read(path) {
-                                        _content_length = file.len();
+                                        _content_length = format!("Content-Length: {}", file.len());
                                         _content_body = bytes_to_utf8(&file);
                                         _content_type = String::from(
                                             "Content-Type: application/octet-stream\r\n",
                                         );
-                                        // let http_responce = format!("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\n\r\n{}", file.len(), bytes_to_utf8(&file));
-                                        // _stream.write_all(http_responce.as_bytes()).unwrap();
                                     } else {
-                                        // _status = String::from("HTTP/1.1 404 Not Found");
-                                        _stream
-                                            .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
-                                            .unwrap();
+                                        _status = String::from("HTTP/1.1 404 Not Found");
+                                        // _stream
+                                        //     .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
+                                        //     .unwrap();
                                     }
                                 }
                                 b"" => {
                                     // _stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n").unwrap();
                                 }
                                 _ => {
-                                    // _status = String::from("HTTP/1.1 404 Not Found");
-                                    _stream
-                                        .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
-                                        .unwrap();
+                                    _status = String::from("HTTP/1.1 404 Not Found");
+                                    // _stream
+                                    //     .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
+                                    //     .unwrap();
                                 }
                             }
                             let http_responce = forming_responce(
                                 &_content_type,
-                                _content_length,
+                                &_content_length,
                                 &_content_encoding,
                                 &_status,
                                 &_content_body,
@@ -170,12 +160,11 @@ fn bytes_to_utf8(bytes: &[u8]) -> String {
 
 fn forming_responce(
     content_type: &str,
-    length: usize,
+    length: &str,
     encoding_method: &str,
     status: &str,
     body: &str,
 ) -> Box<[u8]> {
-    let formated_responce =
-        format!("{status}{content_type}{encoding_method}Content-Length: {length}\r\n\r\n{body}");
+    let formated_responce = format!("{status}{content_type}{encoding_method}{length}\r\n{body}");
     Box::from(formated_responce.as_bytes())
 }
