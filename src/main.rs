@@ -68,6 +68,7 @@ fn main() {
                             let mut _content_type = String::new();
                             let mut _content_encoding = String::new();
                             let supported_encoder: &str = "gzip";
+                            dbg!(&encoders);
 
                             if encoders.contains(&supported_encoder) {
                                 _content_encoding = String::from("Content-Encoding: gzip\r\n");
