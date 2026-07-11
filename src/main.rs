@@ -57,7 +57,7 @@ fn main() {
 
                     let encoders: Vec<&str> =
                         if let Some(encoders) = headers_hash.get("Accept-Encoding") {
-                            encoders.split(",").collect()
+                            encoders.trim().split(",").collect()
                         } else {
                             vec![]
                         };
@@ -68,7 +68,6 @@ fn main() {
                             let mut _content_type = String::new();
                             let mut _content_encoding = String::new();
                             let supported_encoder: &str = "gzip";
-                            dbg!(&encoders);
 
                             if encoders.contains(&supported_encoder) {
                                 _content_encoding = String::from("Content-Encoding: gzip\r\n");
