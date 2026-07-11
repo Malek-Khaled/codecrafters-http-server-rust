@@ -95,20 +95,12 @@ fn main() {
                                             "Content-Type: application/octet-stream\r\n",
                                         );
                                     } else {
-                                        _status = String::from("HTTP/1.1 404 Not Found");
-                                        // _stream
-                                        //     .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
-                                        //     .unwrap();
+                                        _status = String::from("HTTP/1.1 404 Not Found\r\n");
                                     }
                                 }
-                                b"" => {
-                                    // _stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n").unwrap();
-                                }
+                                b"" => {}
                                 _ => {
-                                    _status = String::from("HTTP/1.1 404 Not Found");
-                                    // _stream
-                                    //     .write_all(b"HTTP/1.1 404 Not Found\r\n\r\n")
-                                    //     .unwrap();
+                                    _status = String::from("HTTP/1.1 404 Not Found\r\n");
                                 }
                             }
                             let http_responce = forming_responce(
