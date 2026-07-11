@@ -55,16 +55,28 @@ fn main() {
                         }
                     }
 
+                    let encoders: Vec<&str> =
+                        if let Some(encoders) = headers_hash.get("Accept-Encoding") {
+                            encoders.split(",").collect()
+                        } else {
+                            vec![]
+                        };
+
                     match request_line[0] {
                         b"GET" => {
                             let mut _status = String::from("HTTP/1.1 200 OK\r\n");
                             let mut _content_type = String::new();
                             let mut _content_encoding = String::new();
-                            if let Some(encoder) = headers_hash.get("Accept-Encoding") {
-                                if encoder.eq("gzip") {
-                                    _content_encoding = String::from("Content-Encoding: gzip\r\n");
-                                }
+                            let supported_encoder: &str = "gzip";
+
+                            if encoders.contains(&supported_encoder) {
+                                _content_encoding = String::from("Content-Encoding: gzip\r\n");
                             }
+                            // if let Some(encoder) = headers_hash.get("Accept-Encoding") {
+                            //     if encoder.eq("gzip") {
+                            //         _content_encoding = String::from("Content-Encoding: gzip\r\n");
+                            //     }
+                            // }
                             let mut _content_length = String::new();
                             let mut _content_body = String::new();
                             let url_path: Vec<&[u8]> =
