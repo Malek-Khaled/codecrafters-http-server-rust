@@ -73,14 +73,14 @@ fn main() {
                                 b"echo" => {
                                     let utf8_string = bytes_to_utf8(url_path[2]);
                                     _content_length =
-                                        format!("Content-Length: {}", utf8_string.len());
+                                        format!("Content-Length: {}\r\n", utf8_string.len());
                                     _content_body = utf8_string;
                                     _content_type = String::from("Content-Type: text/plain\r\n");
                                 }
                                 b"user-agent" => {
                                     let user_agent = headers_hash.get("User-Agent").unwrap();
                                     _content_length =
-                                        format!("Content-Length: {}", user_agent.len());
+                                        format!("Content-Length: {}\r\n", user_agent.len());
                                     _content_body = user_agent.clone();
                                     _content_type = String::from("Content-Type: text/plain\r\n");
                                 }
@@ -88,7 +88,8 @@ fn main() {
                                     let path = PathBuf::from(root_dir.directory);
                                     let path = path.join(bytes_to_utf8(url_path[2]));
                                     if let Ok(file) = read(path) {
-                                        _content_length = format!("Content-Length: {}", file.len());
+                                        _content_length =
+                                            format!("Content-Length: {}\r\n", file.len());
                                         _content_body = bytes_to_utf8(&file);
                                         _content_type = String::from(
                                             "Content-Type: application/octet-stream\r\n",
