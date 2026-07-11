@@ -61,10 +61,12 @@ fn main() {
                             let mut _content_type = String::new();
                             let _content_encoding = String::new();
                             if let Some(encoder) = headers_hash.get("Accept-Encoding") {
-                                if encoder.trim().eq("gzip") {
+                                if encoder.eq("gzip") {
                                     _content_type = String::from("Content-Encoding: gzip\r\n");
                                 }
                             }
+                            dbg!(&_content_encoding);
+                            dbg!(headers_hash.get("Accept-Encoding"));
                             let mut _content_length = String::new();
                             let mut _content_body = String::new();
                             let url_path: Vec<&[u8]> =
