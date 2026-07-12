@@ -126,8 +126,7 @@ fn main() {
                                 _content_body = buff;
                             }
                             let formated_responce = format!(
-                                "{_status}{_content_type}{_content_encoding}{length}\r\n",
-                                length = _content_body.len()
+                                "{_status}{_content_type}{_content_encoding}{_content_length}\r\n",
                             );
                             dbg!(&formated_responce);
                             let formated_responce: &[u8] = formated_responce.as_bytes();
