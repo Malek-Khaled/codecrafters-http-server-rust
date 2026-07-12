@@ -129,6 +129,7 @@ fn main() {
                                 "{_status}{_content_type}{_content_encoding}{_content_length}\r\n",
                             );
                             dbg!(&formated_responce);
+                            dbg!(&_content_body);
                             let formated_responce: &[u8] = formated_responce.as_bytes();
                             let http_responce: Vec<&[u8]> = vec![formated_responce, &_content_body];
                             _stream.write_all(&http_responce.concat()).unwrap();
