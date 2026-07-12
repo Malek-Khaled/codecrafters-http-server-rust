@@ -74,7 +74,8 @@ fn main() {
                                 _content_encoding = String::from("Content-Encoding: gzip\r\n");
                             }
                             let mut _content_length = String::new();
-                            let mut _content_body = String::new();
+                            let mut _content_body: Box<&[u8]> = Box::default();
+                            let mut _bff: Vec<u8> = Vec::new();
                             let url_path: Vec<&[u8]> =
                                 request_line[1].split(|&byte| byte == b'/').collect();
                             match url_path[1] {
@@ -82,14 +83,18 @@ fn main() {
                                     let utf8_string = bytes_to_utf8(url_path[2]);
                                     _content_length =
                                         format!("Content-Length: {}\r\n", utf8_string.len());
-                                    _content_body = utf8_string;
+                                    // _content_body = utf8_string;
+                                    // _content_body = vec![url_path[2]];
+                                    _content_body = Box::from(url_path[2]);
                                     _content_type = String::from("Content-Type: text/plain\r\n");
                                 }
                                 b"user-agent" => {
                                     let user_agent = headers_hash.get("User-Agent").unwrap();
                                     _content_length =
                                         format!("Content-Length: {}\r\n", user_agent.len());
-                                    _content_body = user_agent.clone();
+                                    // _content_body = user_agent.clone();
+                                    // _content_body = vec![user_agent.clone().as_bytes()];
+                                    _content_body = Box::from(user_agent.as_bytes());
                                     _content_type = String::from("Content-Type: text/plain\r\n");
                                 }
                                 b"files" => {
@@ -98,7 +103,9 @@ fn main() {
                                     if let Ok(file) = read(path) {
                                         _content_length =
                                             format!("Content-Length: {}\r\n", file.len());
-                                        _content_body = bytes_to_utf8(&file);
+                                        _bff = file;
+                                        let file_array: &[u8] = &_bff;
+                                        _content_body = Box::from(file_array);
                                         _content_type = String::from(
                                             "Content-Type: application/octet-stream\r\n",
                                         );
@@ -111,22 +118,20 @@ fn main() {
                                     _status = String::from("HTTP/1.1 404 Not Found\r\n");
                                 }
                             }
-                            let http_responce = forming_responce(
-                                &_content_type,
-                                &_content_length,
-                                &_content_encoding,
-                                &_status,
-                                &_content_body,
-                            );
                             if !&_content_encoding.is_empty() {
-                                let buff: Vec<u8> = Vec::new();
+                                let buff: Box<&[u8]> = Box::default();
                                 let mut compressor =
                                     GzEncoder::new(Vec::new(), Compression::default());
                                 compressor.write_all(&buff).unwrap();
-                                _stream.write_all(&buff).unwrap();
-                            } else {
-                                _stream.write_all(&http_responce).unwrap();
+                                _content_body = buff;
                             }
+                            let formated_responce = format!(
+                                "{_status}{_content_type}{_content_encoding}{length}\r\n",
+                                length = _content_body.len()
+                            );
+                            let formated_responce: &[u8] = formated_responce.as_bytes();
+                            let http_responce: Vec<&[u8]> = vec![formated_responce, &_content_body];
+                            _stream.write_all(&http_responce.concat()).unwrap();
                         }
                         b"POST" => {
                             let file_path: Vec<&[u8]> =
@@ -167,13 +172,13 @@ fn bytes_to_utf8(bytes: &[u8]) -> String {
     utf8_string.trim().replace("\0", "")
 }
 
-fn forming_responce(
-    content_type: &str,
-    length: &str,
-    encoding_method: &str,
-    status: &str,
-    body: &str,
-) -> Box<[u8]> {
-    let formated_responce = format!("{status}{content_type}{encoding_method}{length}\r\n{body}");
-    Box::from(formated_responce.as_bytes())
-}
+// fn forming_responce(
+//     content_type: &str,
+//     length: &str,
+//     encoding_method: &str,
+//     status: &str,
+//     // body: &str,
+// ) -> Vec<[u8]> {
+//     let formated_responce = format!("{status}{content_type}{encoding_method}{length}\r\n");
+//     vec![formated_responce.as_bytes()]
+// }
