@@ -131,11 +131,6 @@ fn main() {
                                     GzEncoder::new(&_content_body[..], Compression::default());
                                 gz.read_to_end(&mut _encoded).unwrap();
                             }
-                            let mut grg = GzDecoder::new(&_encoded[..]);
-                            let mut decoded = String::new();
-                            grg.read_to_string(&mut decoded).unwrap();
-                            dbg!(&decoded);
-                            dbg!(&decoded.len());
 
                             dbg!(!_encoded.is_empty());
                             if !_encoded.is_empty() {
