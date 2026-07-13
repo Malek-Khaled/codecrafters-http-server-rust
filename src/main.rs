@@ -1,8 +1,5 @@
 use clap::Parser;
-use flate2::{
-    read::{GzDecoder, GzEncoder},
-    Compression,
-};
+use flate2::{read::GzEncoder, Compression};
 #[allow(unused_imports)]
 use std::net::TcpListener;
 use std::{
@@ -68,89 +65,91 @@ fn main() {
 
                     match request_line[0] {
                         b"GET" => {
-                            let mut _status = String::from("HTTP/1.1 200 OK\r\n");
-                            let mut _content_type = String::new();
-                            let mut _content_encoding = String::new();
-                            let supported_encoder: &str = "gzip";
+                            let mut _status: Vec<u8> = Vec::from(b"HTTP/1.1 200 OK\r\n");
+                            let mut _content_type: Vec<u8> = Vec::new();
+                            let mut _content_encoding: Vec<u8> = Vec::new();
+                            let supported_encoder = "gzip";
 
                             if encoders.contains(&supported_encoder) {
-                                _content_encoding = String::from("Content-Encoding: gzip\r\n");
+                                _content_encoding = b"Content-Encoding: gzip\r\n".to_vec();
                             }
-                            let mut _content_length = String::new();
-                            let mut _content_body: Box<&[u8]> = Box::default();
-                            let mut _bff: Vec<u8> = Vec::new();
+                            // let mut _content_length: Vec<u8> = Vec::new();
+                            let mut _content_body: Vec<u8> = Vec::new();
                             let url_path: Vec<&[u8]> =
                                 request_line[1].split(|&byte| byte == b'/').collect();
                             match url_path[1] {
                                 b"echo" => {
                                     let utf8_string = bytes_to_utf8(url_path[2]);
-                                    _content_length =
-                                        format!("Content-Length: {}\r\n", utf8_string.len());
-                                    // _content_body = utf8_string;
-                                    // _content_body = vec![url_path[2]];
-                                    _content_body = Box::from(url_path[2]);
-                                    _content_type = String::from("Content-Type: text/plain\r\n");
+                                    // _content_length = [
+                                    //     b"Content-Length: ",
+                                    //     utf8_string.len().to_string().as_bytes(),
+                                    //     b"\r\n",
+                                    // ]
+                                    // .concat();
+                                    _content_body = url_path[2].to_vec();
+                                    _content_type = b"Content-Type: text/plain\r\n".to_vec();
                                 }
                                 b"user-agent" => {
                                     let user_agent = headers_hash.get("User-Agent").unwrap();
-                                    _content_length =
-                                        format!("Content-Length: {}\r\n", user_agent.len());
-                                    // _content_body = user_agent.clone();
-                                    // _content_body = vec![user_agent.clone().as_bytes()];
-                                    _content_body = Box::from(user_agent.as_bytes());
-                                    _content_type = String::from("Content-Type: text/plain\r\n");
+                                    // _content_length = [
+                                    //     b"Content-Length: ",
+                                    //     user_agent.len().to_string().as_bytes(),
+                                    //     b"\r\n",
+                                    // ]
+                                    // .concat();
+                                    _content_body = user_agent.as_bytes().to_vec();
+                                    _content_type = b"Content-Type: text/plain\r\n".to_vec();
                                 }
                                 b"files" => {
                                     let path = PathBuf::from(root_dir.directory);
                                     let path = path.join(bytes_to_utf8(url_path[2]));
                                     if let Ok(file) = read(path) {
-                                        _content_length =
-                                            format!("Content-Length: {}\r\n", file.len());
-                                        _bff = file;
-                                        let file_array: &[u8] = &_bff;
-                                        _content_body = Box::from(file_array);
-                                        _content_type = String::from(
-                                            "Content-Type: application/octet-stream\r\n",
-                                        );
+                                        // _content_length = [
+                                        //     b"Content-Length: ",
+                                        //     file.len().to_string().as_bytes(),
+                                        //     b"\r\n",
+                                        // ]
+                                        // .concat();
+                                        _content_body = file.to_vec();
+                                        _content_type =
+                                            b"Content-Type: application/octet-stream\r\n".to_vec();
                                     } else {
-                                        _status = String::from("HTTP/1.1 404 Not Found\r\n");
+                                        _status = b"HTTP/1.1 404 Not Found\r\n".to_vec();
                                     }
                                 }
                                 b"" => {}
                                 _ => {
-                                    _status = String::from("HTTP/1.1 404 Not Found\r\n");
+                                    _status = b"HTTP/1.1 404 Not Found\r\n".to_vec();
                                 }
                             }
-                            // let mut compressor = GzEncoder::new(Vec::new(), Compression::default());
-                            let mut _encoded: Vec<u8> = Vec::new();
                             if !&_content_encoding.is_empty() {
-                                // let byte_string = b"hello world";
-                                // compressor.write_all(&_content_body).unwrap();
-                                // _encoded = compressor.finish().unwrap();
-                                let mut gz =
-                                    GzEncoder::new(&_content_body[..], Compression::default());
-                                gz.read_to_end(&mut _encoded).unwrap();
+                                let buffer = _content_body.clone();
+                                _content_body.clear();
+                                let mut gz = GzEncoder::new(&buffer[..], Compression::default());
+                                gz.read_to_end(&mut _content_body).unwrap();
                             }
 
-                            dbg!(!_encoded.is_empty());
-                            if !_encoded.is_empty() {
-                                let formated_responce = format!(
-                                    "{_status}{_content_type}{_content_encoding}Content-Length: {length}\r\n\r\n",
-                                    length = _encoded.len()
-                                );
-                                let formated_responce: &[u8] = formated_responce.as_bytes();
-                                let http_responce: Vec<u8> =
-                                    [formated_responce, &_encoded[..]].concat();
-                                _stream.write_all(&http_responce).unwrap();
-                            } else {
-                                let formated_responce = format!(
-                                "{_status}{_content_type}{_content_encoding}{_content_length}\r\n",
+                            let formatted_responce = forming_responce(
+                                &_content_type,
+                                _content_body.len(),
+                                &_content_encoding,
+                                &_status,
+                                &_content_body,
                             );
-                                let formated_responce: &[u8] = formated_responce.as_bytes();
-                                let http_responce: Vec<u8> =
-                                    [formated_responce, &_content_body].concat();
-                                _stream.write_all(&http_responce).unwrap();
-                            }
+                            // let formated_responce = format!(
+                            //         "{_status}{_content_type}{_content_encoding}Content-Length: {length}\r\n\r\n",
+                            //         length = _content_body.len()
+                            //     );
+                            // let http_responce: Vec<u8> =
+                            //     [formated_responce, &_encoded[..]].concat();
+                            _stream.write_all(&formatted_responce).unwrap();
+                            // let formated_responce = format!(
+                            //     "{_status}{_content_type}{_content_encoding}{_content_length}\r\n",
+                            // );
+                            // let formated_responce: &[u8] = formated_responce.as_bytes();
+                            // let http_responce: Vec<u8> =
+                            //     [formated_responce, &_content_body].concat();
+                            // _stream.write_all(&http_responce).unwrap();
                         }
                         b"POST" => {
                             let file_path: Vec<&[u8]> =
@@ -191,13 +190,22 @@ fn bytes_to_utf8(bytes: &[u8]) -> String {
     utf8_string.trim().replace("\0", "")
 }
 
-// fn forming_responce(
-//     content_type: &str,
-//     length: &str,
-//     encoding_method: &str,
-//     status: &str,
-//     // body: &str,
-// ) -> Vec<[u8]> {
-//     let formated_responce = format!("{status}{content_type}{encoding_method}{length}\r\n");
-//     vec![formated_responce.as_bytes()]
-// }
+fn forming_responce(
+    content_type: &[u8],
+    length: usize,
+    encoding_method: &[u8],
+    status: &[u8],
+    body: &[u8],
+) -> Vec<u8> {
+    let formatted = [
+        status,
+        content_type,
+        encoding_method,
+        b"Content-Length: ",
+        length.to_string().as_bytes(),
+        b"\r\n\r\n",
+        body,
+    ]
+    .concat();
+    formatted
+}
