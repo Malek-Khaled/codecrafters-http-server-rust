@@ -1,5 +1,5 @@
 use clap::Parser;
-use flate2::{write::GzEncoder, Compression};
+use flate2::{read::GzDecoder, write::GzEncoder, Compression};
 #[allow(unused_imports)]
 use std::net::TcpListener;
 use std::{
@@ -118,29 +118,29 @@ fn main() {
                                     _status = String::from("HTTP/1.1 404 Not Found\r\n");
                                 }
                             }
-                            let mut _encoded: Vec<&[u8]> = Vec::new();
                             let mut compressor = GzEncoder::new(Vec::new(), Compression::default());
-                            let mut _fefe: Vec<u8> = Vec::new();
+                            let mut _encoded: Vec<u8> = Vec::new();
+                            dbg!(!&_content_encoding.is_empty());
                             if !&_content_encoding.is_empty() {
                                 compressor.write_all(&_content_body).unwrap();
-                                _fefe = compressor.finish().unwrap();
-                                _encoded.push(&_fefe);
+                                _encoded = compressor.finish().unwrap();
                             }
                             let formated_responce = format!(
                                 "{_status}{_content_type}{_content_encoding}{_content_length}\r\n",
                             );
-                            dbg!(&formated_responce);
-                            dbg!(&_content_body);
+                            // dbg!(&formated_responce);
+                            // dbg!(&_content_body);
                             let formated_responce: &[u8] = formated_responce.as_bytes();
                             if !_encoded.is_empty() {
-                                let _encoded: &[u8] = &_encoded.concat();
-                                let http_responce: Vec<&[u8]> = vec![formated_responce, _encoded];
-                                dbg!(&http_responce);
+                                // let _encoded: &[u8] = &_encoded.concat();
+                                let http_responce: Vec<&[u8]> =
+                                    vec![formated_responce, &_encoded[..]];
+                                // dbg!(&http_responce);
                                 _stream.write_all(&http_responce.concat()).unwrap();
                             } else {
                                 let http_responce: Vec<&[u8]> =
                                     vec![formated_responce, &_content_body];
-                                dbg!(&http_responce.concat());
+                                // dbg!(&http_responce.concat());
                                 _stream.write_all(&http_responce.concat()).unwrap();
                             }
                         }
