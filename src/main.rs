@@ -128,15 +128,12 @@ fn main() {
                             let formated_responce = format!(
                                 "{_status}{_content_type}{_content_encoding}{_content_length}\r\n",
                             );
-                            // dbg!(&formated_responce);
-                            // dbg!(&_content_body);
                             let formated_responce: &[u8] = formated_responce.as_bytes();
                             if !_encoded.is_empty() {
-                                // let _encoded: &[u8] = &_encoded.concat();
-                                let http_responce: Vec<&[u8]> =
-                                    vec![formated_responce, &_encoded[..]];
-                                // dbg!(&http_responce);
-                                _stream.write_all(&http_responce.concat()).unwrap();
+                                let http_responce: Vec<u8> =
+                                    [formated_responce, &_encoded[..]].concat();
+                                dbg!(&http_responce);
+                                _stream.write_all(&http_responce).unwrap();
                             } else {
                                 let http_responce: Vec<&[u8]> =
                                     vec![formated_responce, &_content_body];
