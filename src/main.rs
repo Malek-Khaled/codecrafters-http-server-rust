@@ -60,6 +60,17 @@ fn main() {
                         match request_line[0] {
                             b"GET" => {
                                 let mut status: Vec<u8> = Vec::from(b"HTTP/1.1 200 OK\r\n");
+                                let connection: Vec<u8> =
+                                    if headers_hash.get("Connection").is_some() {
+                                        [
+                                            b"Connection: ",
+                                            headers_hash.get("Connection").unwrap().as_bytes(),
+                                            b"\r\n",
+                                        ]
+                                        .concat()
+                                    } else {
+                                        Vec::new()
+                                    };
                                 let mut content_type: Vec<u8> = Vec::new();
                                 let mut content_encoding: Vec<u8> = Vec::new();
                                 let supported_encoder = "gzip";
@@ -112,6 +123,7 @@ fn main() {
 
                                 let formatted_responce = forming_responce(
                                     &content_type,
+                                    &connection,
                                     _content_body.len(),
                                     &content_encoding,
                                     &status,
@@ -167,6 +179,7 @@ fn bytes_to_utf8(bytes: &[u8]) -> String {
 
 fn forming_responce(
     content_type: &[u8],
+    connection: &[u8],
     length: usize,
     encoding_method: &[u8],
     status: &[u8],
@@ -175,6 +188,7 @@ fn forming_responce(
     let formatted = [
         status,
         content_type,
+        connection,
         encoding_method,
         b"Content-Length: ",
         length.to_string().as_bytes(),
